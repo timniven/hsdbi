@@ -1,0 +1,2 @@
+* SQLRepository should make __init__ arguments explicit, not expected kwargs.
+  It is a benefit of inheritance that child classes can require extra arguments.

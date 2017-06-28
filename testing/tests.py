@@ -9,7 +9,7 @@ import pymongo
 
 LTEST_CONN_STR = 'mysql+pymysql://root:TimN7367#@localhost/ltest'
 Base = declarative.declarative_base()
-ORM_MODULE = 'tests'
+ORM_MODULE = 'testing'
 
 
 class Foo(Base):
