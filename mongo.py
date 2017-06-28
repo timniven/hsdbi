@@ -7,14 +7,24 @@ import errors
 
 
 def projection_dict(projection):
-    return dict(zip(projection, [1] * len(projection)))
+    if projection:
+        return dict(zip(projection, [1] * len(projection)))
+    else:
+        return {}
 
 
 # MongoDB Implementations
 
 
 class MongoRepositoryFacade(base.RepositoryFacade):
-    """Repository Facade implementation for MongoDB."""
+    """Repository Facade implementation for MongoDB.
+
+    With an SQL Repository facade, we connection to a single database instance.
+    With a Mongo Repository facade, we connect to the database server. So we
+    will not specify a database to connect to. We leave this to the Repository
+    class. This will create flexibility in the number of connections we
+    potentially need to make.
+    """
 
     def __init__(self, **kwargs):
         """Create a new MongoRepositoryFacade.
@@ -30,7 +40,6 @@ class MongoRepositoryFacade(base.RepositoryFacade):
         self._db_name = kwargs['db_name']
         self._connection = pymongo.MongoClient(
             host=self._server, port=self._port)
-        exec('self._db = self.connection.%s' % self._db_name)
 
     def dispose(self):
         self._connection.close()
@@ -45,25 +54,39 @@ class MongoRepository(base.Repository):
         Args (expected keyword args):
           collection_name: String, the name of the collection for this
             Repository to access.
-          db: pymongo.database.Database with the connection.
+          db_name: the name of the db for this Repository to connect to.
+          connection: pymongo.mongo_client.MongoClient, connection to the
+            database server.
         """
         super(MongoRepository, self).__init__(**kwargs)
+        self._connection = kwargs['connection']
         self._collection_name = kwargs['collection_name']
-        self._db = kwargs['db']
+        self._db_name = kwargs['db_name']
+        self._db = self._connection.get_database(self._db_name)
         self._collection = self._db.get_collection(self._collection_name)
 
-    def add(self, items):
+    def add(self, items=None, **kwargs):
         """Add one or more items to the database.
 
         Args:
           items: one or more objects of the intended type; can be a list or
             a single object.
+          kwargs: if items is not specified, the kwargs dictionary is used
+            to create the record.
+
+        Raises:
+          ValueError: if neither items nor kwargs are specified.
         """
-        if isinstance(items, list):
-            for item in items:
-                self._collection.insert_one(item)
+        if items:
+            if isinstance(items, list):
+                for item in items:
+                    self._collection.insert_one(item)
+            else:
+                self._collection.insert_one(items)
+        elif len(kwargs) > 0:
+            self._collection.insert_one(kwargs)
         else:
-            self._collection.insert_one(items)
+            raise ValueError('You must specify either items or kwargs')
 
     def all(self, projection=None):
         """Retrieve all items of this kind from the database.
@@ -113,13 +136,12 @@ class MongoRepository(base.Repository):
             self._collection.delete_one(kwargs)
 
     def delete_all_records(self):
-        """Delete all records from this table.
-        """
+        """Delete all records from this table."""
         self._collection.drop()
 
     def dispose(self):
         """Dipose of the MongoRepository."""
-        self._db.logout()
+        self._connection.close()
 
     def get(self, expect=True, projection=None, **kwargs):
         """Get an item from the database.
@@ -131,6 +153,9 @@ class MongoRepository(base.Repository):
             if not found if True.
           projection: List of String attribute names to project, optional.
           kwargs: dictionary of search values.
+
+        Returns:
+          Dictionary: representing the retrieved document, if found.
 
         Raises:
           NotFoundError: if the item is not found in the database, but it is

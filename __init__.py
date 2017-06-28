@@ -7,7 +7,9 @@ import tests
 
 test_cases = [
     tests.SQLRepositoryFacadeTests,
-    tests.SQLRepositoryTests
+    tests.SQLRepositoryTests,
+    tests.MongoRepositoryFacadeTests,
+    tests.MongoRepositoryTests
 ]
 
 
