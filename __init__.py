@@ -1,13 +1,13 @@
 import unittest
-from db import interface_base_tests
+import tests
 
 
 # > python -m unittest discover
 
 
 test_cases = [
-    interface_base_tests.SQLRepositoryFacadeTests,
-    interface_base_tests.SQLRepositoryTests
+    tests.SQLRepositoryFacadeTests,
+    tests.SQLRepositoryTests
 ]
 
 
