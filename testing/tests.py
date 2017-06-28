@@ -1,15 +1,15 @@
 import unittest
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
-import sql
-import errors
-import mongo
+from hsdbi import sql
+from hsdbi import errors
+from hsdbi import mongo
 import pymongo
 
 
 LTEST_CONN_STR = 'mysql+pymysql://root:TimN7367#@localhost/ltest'
 Base = declarative.declarative_base()
-ORM_MODULE = 'testing'
+ORM_MODULE = 'testing.tests'
 
 
 class Foo(Base):

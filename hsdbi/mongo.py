@@ -1,6 +1,6 @@
-import base
+from hsdbi import base
 import pymongo
-import errors
+from hsdbi import errors
 
 
 # Static Functions

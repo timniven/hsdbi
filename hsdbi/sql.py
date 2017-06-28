@@ -1,6 +1,6 @@
 """Objects for interfacing with SQL databases."""
-import base
-import errors
+from hsdbi import base
+from hsdbi import errors
 import importlib
 import sqlalchemy as sa
 from sqlalchemy import orm as saorm
@@ -30,10 +30,11 @@ def create_sql_session(connection_string):
 class SQLRepository(base.Repository):
     """Generic wrapper for db access methods for a table."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, primary_keys, class_type, orm_module,
+                 connection_string=None, session=None, **kwargs):
         """Create a new Repository.
 
-        Args (expected keyword args):
+        Args:
           class_type: Type, the type of the object this repository will handle.
             It should be one of the orm classes.
           orm_module: String, the name of the module containing orm classes
@@ -43,18 +44,25 @@ class SQLRepository(base.Repository):
           session: SQLAlchemy session object, optional.
         """
         super(SQLRepository, self).__init__(**kwargs)
-        if 'connection_string' in kwargs.keys():
-            self._connection_string = kwargs['connection_string']
+        self._class_type = class_type
+        self._orm_module = orm_module
+        globals()['orm'] = importlib.import_module(orm_module)
+        self._primary_keys = primary_keys
+        self._connection_string = connection_string
+        self._session = session
+        if connection_string:
+            self._connection_string = connection_string
             self._session = create_sql_session(self._connection_string)
-        elif 'session' in kwargs.keys():
-            self._session = kwargs['session']
+        elif session:
+            self._session = session
         else:
             raise ValueError('You must pass either a session or '
                              'connection string.')
-        self._class_type = kwargs['class_type']
-        self._orm_module = kwargs['orm_module']
-        globals()['orm'] = importlib.import_module(kwargs['orm_module'])
-        self._primary_keys = kwargs['primary_keys']
+
+    def __enter__(self):
+        self.__init__(self._primary_keys, self._class_type, self._orm_module,
+                      self._connection_string, self._session, **self._kwargs)
+        return self
 
     def add(self, items):
         """Add one or more items to the database.
