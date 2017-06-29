@@ -17,7 +17,7 @@ def create_sql_session(connection_string):
       connection_string: String.
 
     Returns:
-      SQLAlchemy session object.
+      sqlalchemy.orm.session.Session object.
     """
     engine = sa.create_engine(connection_string)
     session = saorm.sessionmaker(bind=engine)()
@@ -38,10 +38,13 @@ class SQLRepository(base.Repository):
           class_type: Type, the type of the object this repository will handle.
             It should be one of the orm classes.
           orm_module: String, the name of the module containing orm classes
-            that this Repository will work on.
+            that this Repository will work on. E.g. 'db.orm'.
           primary_keys: List of strings, identify the attribute names that
             represent the primary keys for this class.
-          session: SQLAlchemy session object, optional.
+          connection_string: String, optional, but must pass one of either
+            connection_string or session.
+          session: SQLAlchemy session object, optional, but must pass one of
+            either connection_string or session.
         """
         super(SQLRepository, self).__init__(**kwargs)
         self._class_type = class_type
@@ -84,7 +87,7 @@ class SQLRepository(base.Repository):
           projection: List, optional, of attributes to project.
 
         Returns:
-          List of items of the relevant type.
+          List of items of the relevant type; or Tuple of values if projected.
         """
         query = self._session.query(self._class_type)
         if projection:
@@ -116,6 +119,7 @@ class SQLRepository(base.Repository):
         Args:
           items: one or more objects of the intended type; can be a list or
             a single object.
+          kwargs: can specify the primary key name(s) and value(s).
 
         Raises:
           ValueError: if neither items nor keyword arguments are specified.
@@ -157,11 +161,13 @@ class SQLRepository(base.Repository):
           expect: whether or not to expect the result. Will raise an exception
             if not found if True.
           projection: List of String attribute names to project, optional.
+          kwargs: can specify the primary key attribute name(s) and value(s).
 
         Raises:
           TypeError: if any primary key values are missing from the keyword
             arguments received.
-          NotFoundError: if the item is not found in the database.
+          NotFoundError: if the item is not found in the database and the expect
+            flag is set to True.
         """
         for pk in self._primary_keys:
             if pk not in kwargs.keys():
@@ -202,15 +208,15 @@ class SQLRepository(base.Repository):
         return query.with_entities(eval(', '.join(projection)))
 
     def search(self, projection=None, **kwargs):
-        """Attempt to get items (plural) from the database.
+        """Attempt to get item(s) from the database.
 
-        Pass whatever attributes you want to keyword arguments.
+        Pass whatever attributes you want as keyword arguments.
 
         Args:
           projection: List of String attribute names to project, optional.
 
         Returns:
-          List of matching results.
+          List of matching results; or Tuple if projected.
         """
         query = self._session.query(self._class_type)
         for attr, value in kwargs.items():
@@ -223,49 +229,39 @@ class SQLRepository(base.Repository):
 
 
 class SQLRepositoryFacade(base.RepositoryFacade):
-    """Facade for repository access.
-
-    From the Wikipedia entry on "Facade pattern":
-      'A facade is an object that provides a simplified interface to a
-      larger body of code...'
-      https://en.wikipedia.org/wiki/Facade_pattern
-    In this case, we provide a single point of access for all Repository
-    classes grouped in a conceptual unit, encapsulate the db connection,
-    provide a commit() function for saving changes, and implement the magic
-    methods __exit__ and __enter__ so this class is valid for use in a "with"
-    statement.
+    """Facade for SQL repositories.
 
     Attributes:
-      session: the sqlalchemy session wrapped by this facade. There was a
+      session: the sqlalchemy session wrapped by this facade. There is a
         question of whether to expose this. It was decided to expose it because
-        the Repository classes need access to it, and because it will enable
-        flexibility since consumers can directly use it if convenient.
+        it will enable flexibility since consumers can directly use it if
+        convenient, providing better extensibility.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, connection_string, **kwargs):
         """Create a new RepositoryFacade.
 
-        This will create the self._engine and self._session variables from
+        This will create the self._engine and self.session variables from
         the passed connection string. It also saves self._connection_string
         for reference.
 
         Args:
-          connection_info: the connection string to the database.
+          connection_string: String, the connection string to the database.
         """
         super(SQLRepositoryFacade, self).__init__(**kwargs)
-        self._engine = sa.create_engine(kwargs['connection_string'])
+        self._connection_string = connection_string
+        self._engine = sa.create_engine(connection_string)
         self.session = saorm.sessionmaker(bind=self._engine)()
 
-    def commit(self):
-        """Save changes to the database.
+    def __enter__(self):
+        self.__init__(self._connection_string, **self._kwargs)
+        return self
 
-        Calls commit() on the sqlalchemy session object.
-        """
+    def commit(self):
+        """Save changes to the database."""
         self.session.commit()
 
     def dispose(self):
-        """Dispose of this class.
-
-        Will explicitly dispose of the database connection.
+        """Dispose of this class - close the database connection.
         """
         self.session.close()

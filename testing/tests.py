@@ -22,8 +22,8 @@ class Foo(Base):
 
 
 class TestFacade(sql.SQLRepositoryFacade):
-    def __init__(self, **kwargs):
-        super(TestFacade, self).__init__(**kwargs)
+    def __init__(self, connection_string, **kwargs):
+        super(TestFacade, self).__init__(connection_string, **kwargs)
         self.foos = sql.SQLRepository(
             class_type=Foo, orm_module=ORM_MODULE, primary_keys=['abbr'],
             session=self.session)
