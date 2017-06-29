@@ -2,7 +2,16 @@
 
 
 class Repository:
-    """Abstract Repository class. Essentially an interface declaration."""
+    """Abstract Repository class
+
+    The docstrings here will indicate the intention of the functions and their
+    arguments. Child classes can extend these in part, requiring new arguments.
+
+    The base class remains agnostic as to return types as this will vary across
+    databases.
+
+    The exception is the exists() function, which is implemented here.
+    """
 
     def __init__(self, **kwargs):
         self._kwargs = kwargs
@@ -31,9 +40,6 @@ class Repository:
 
         Args:
           projection: List, optional, of attributes to project.
-
-        Returns:
-          List of all records.
         """
         raise NotImplementedError()
 
@@ -42,7 +48,7 @@ class Repository:
         raise NotImplementedError()
 
     def count(self):
-        """Get a count of how many records are in this table / collection."""
+        """Get a count of how many records are in this table/collection."""
         raise NotImplementedError()
 
     def delete(self, items=None, **kwargs):
@@ -53,6 +59,7 @@ class Repository:
 
         Args:
           items: an object or list of objects to delete.
+          kwargs: can specify primary key attribute name(s) and value(s).
         """
         raise NotImplementedError()
 
@@ -78,6 +85,7 @@ class Repository:
         Arguments:
           expect: Bool, whether to throw an error if not found.
           projection: List, optional, of attributes to project.
+          kwargs: can specify the primary key attribute name(s) and value(s).
         """
         raise NotImplementedError()
 
@@ -88,9 +96,7 @@ class Repository:
 
         Args:
           projection: List, optional, of attributes to project.
-
-        Returns:
-          List of records matching the search criteria.
+          kwargs: attribute name(s) and value(s) to search on.
         """
         raise NotImplementedError()
 
@@ -109,7 +115,7 @@ class RepositoryFacade:
     statement.
 
     Collecting multiple repositories together might be viewed as an
-    inefficiency: it is simple enough to initialize a Repository class as and
+    inefficiency: it is simple enough to initialize one Repository class as and
     when it is needed. Indeed, this is how I use repositories.
 
     The Facade comes in handy where we want to share database context between
@@ -121,12 +127,7 @@ class RepositoryFacade:
     """
 
     def __init__(self, **kwargs):
-        """Create a new RepositoryFacade.
-
-        Connection information to be passed as keyword arguments. Different
-        subclasses will have different arguments: e.g. SQL passes a
-        connection_string, but mongo asks for server, port, and db_name.
-        """
+        """Create a new RepositoryFacade."""
         self._kwargs = kwargs
 
     def __enter__(self):
@@ -141,4 +142,5 @@ class RepositoryFacade:
         self.dispose()
 
     def dispose(self):
+        """Close the connection for disposal of the RepositoryFacade."""
         raise NotImplementedError()

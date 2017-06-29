@@ -262,6 +262,5 @@ class SQLRepositoryFacade(base.RepositoryFacade):
         self.session.commit()
 
     def dispose(self):
-        """Dispose of this class - close the database connection.
-        """
+        """Dispose of this class - close the database connection."""
         self.session.close()
