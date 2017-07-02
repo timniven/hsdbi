@@ -49,7 +49,8 @@ class SQLRepository(base.Repository):
         super(SQLRepository, self).__init__(**kwargs)
         self._class_type = class_type
         self._orm_module = orm_module
-        globals()['orm'] = importlib.import_module(orm_module)
+        self._orm_module_key = orm_module.replace('.', '_')
+        globals()[self._orm_module_key] = importlib.import_module(orm_module)
         self._primary_keys = primary_keys
         self._connection_string = connection_string
         self._session = session
@@ -105,8 +106,9 @@ class SQLRepository(base.Repository):
           Integer, the number of records in the table.
         """
         return self._session\
-            .query(func.count(eval('orm.%s.%s' % (self._class_type.__name__,
-                                                  self._primary_keys[0]))))\
+            .query(func.count(eval('%s.%s.%s' % (self._orm_module_key,
+                                                 self._class_type.__name__,
+                                                 self._primary_keys[0]))))\
             .scalar()
 
     def delete(self, items=None, **kwargs):
@@ -175,8 +177,9 @@ class SQLRepository(base.Repository):
         query = self._session.query(self._class_type)
         for attr, value in kwargs.items():
             query = query.filter(
-                eval("orm.%s.%s == '%s'"
-                     % (self._class_type.__name__, attr, value)))
+                eval("%s.%s.%s == '%s'"
+                     % (self._orm_module_key,
+                        self._class_type.__name__, attr, value)))
         if projection:
             query = self.project(query, projection)
         result = query.one_or_none()
@@ -195,7 +198,7 @@ class SQLRepository(base.Repository):
           projection: List of String attributes to project.
 
         Returns:
-          List of tuples of projected values.
+          Query object.
 
         Raises:
           ValueError if projection is not a list. It is easy to pass a string
@@ -203,7 +206,8 @@ class SQLRepository(base.Repository):
         """
         if not isinstance(projection, list):
             raise ValueError('projection must be a list.')
-        projection = ['orm.%s.%s' % (self._class_type.__name__, attr)
+        projection = ['%s.%s.%s' % (self._orm_module_key,
+                                    self._class_type.__name__, attr)
                       for attr in projection]
         return query.with_entities(eval(', '.join(projection)))
 
@@ -221,8 +225,9 @@ class SQLRepository(base.Repository):
         query = self._session.query(self._class_type)
         for attr, value in kwargs.items():
             query = query.filter(
-                eval("orm.%s.%s == '%s'"
-                     % (self._class_type.__name__, attr, value)))
+                eval("%s.%s.%s == '%s'"
+                     % (self._orm_module_key,
+                        self._class_type.__name__, attr, value)))
         if projection:
             query = self.project(query, projection)
         return query.all()
