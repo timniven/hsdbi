@@ -255,8 +255,7 @@ class SQLRepositoryFacade(base.RepositoryFacade):
         """
         super(SQLRepositoryFacade, self).__init__(**kwargs)
         self._connection_string = connection_string
-        self._engine = sa.create_engine(connection_string)
-        self.session = saorm.sessionmaker(bind=self._engine)()
+        self.session = create_sql_session(connection_string)
 
     def __enter__(self):
         self.__init__(self._connection_string, **self._kwargs)
