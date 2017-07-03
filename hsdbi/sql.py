@@ -177,7 +177,7 @@ class SQLRepository(base.Repository):
         query = self._session.query(self._class_type)
         for attr, value in kwargs.items():
             query = query.filter(
-                eval("%s.%s.%s == '%s'"
+                eval('%s.%s.%s == "%s"'
                      % (self._orm_module_key,
                         self._class_type.__name__, attr, value)))
         if projection:
@@ -225,7 +225,7 @@ class SQLRepository(base.Repository):
         query = self._session.query(self._class_type)
         for attr, value in kwargs.items():
             query = query.filter(
-                eval("%s.%s.%s == '%s'"
+                eval('%s.%s.%s == "%s"'
                      % (self._orm_module_key,
                         self._class_type.__name__, attr, value)))
         if projection:
