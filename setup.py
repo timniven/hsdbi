@@ -1,6 +1,9 @@
 from setuptools import setup, find_packages
 
 
+# python setup.py sdist upload -r pypi
+
+
 setup(
     name='hsdbi',
     packages=find_packages(exclude=['testing']),
