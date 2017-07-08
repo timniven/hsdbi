@@ -218,6 +218,10 @@ class SQLRepositoryTests(unittest.TestCase):
         self.assertEqual(abbrs[0], ('DEF',))
         self.assertEqual(abbrs[1], ('GHI',))
 
+    def test_search_with_debug(self):
+        self._insert_three()
+        _ = self.repository.search(name='def', projection=['abbr'], debug=True)
+
 
 class MongoRepositoryFacadeTests(unittest.TestCase):
     def setUp(self):

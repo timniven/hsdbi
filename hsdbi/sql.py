@@ -154,7 +154,7 @@ class SQLRepository(base.Repository):
         """Dispose of the database connection."""
         self._session.close()
 
-    def get(self, expect=True, projection=None, **kwargs):
+    def get(self, expect=True, projection=None, debug=False, **kwargs):
         """Get an item from the database.
 
         Pass the primary key values in as keyword arguments.
@@ -164,6 +164,8 @@ class SQLRepository(base.Repository):
             if not found if True.
           projection: List of String attribute names to project, optional.
           kwargs: can specify the primary key attribute name(s) and value(s).
+          debug: Boolean, if true will print the SQL of the query for
+            debugging purposes.
 
         Raises:
           TypeError: if any primary key values are missing from the keyword
@@ -182,6 +184,8 @@ class SQLRepository(base.Repository):
                         self._class_type.__name__, attr, value)))
         if projection:
             query = self.project(query, projection)
+        if debug:
+            print(query.statement)
         result = query.one_or_none()
         if not result and expect:
             raise errors.NotFoundError(pk=kwargs, table=self._class_type)
@@ -190,12 +194,14 @@ class SQLRepository(base.Repository):
         else:
             return result
 
-    def project(self, query, projection):
+    def project(self, query, projection, debug=False):
         """Perfoms a projection on the given query.
 
         Args:
           query: the query object to project.
           projection: List of String attributes to project.
+          debug: Boolean, if true will print the SQL of the query for
+            debugging purposes.
 
         Returns:
           Query object.
@@ -209,15 +215,20 @@ class SQLRepository(base.Repository):
         projection = ['%s.%s.%s' % (self._orm_module_key,
                                     self._class_type.__name__, attr)
                       for attr in projection]
-        return query.with_entities(eval(', '.join(projection)))
+        query = query.with_entities(eval(', '.join(projection)))
+        if debug:
+            print(query.statement)
+        return query
 
-    def search(self, projection=None, **kwargs):
+    def search(self, projection=None, debug=False, **kwargs):
         """Attempt to get item(s) from the database.
 
         Pass whatever attributes you want as keyword arguments.
 
         Args:
           projection: List of String attribute names to project, optional.
+          debug: Boolean, if true will print the SQL of the query for
+            debugging purposes.
 
         Returns:
           List of matching results; or Tuple if projected.
@@ -227,9 +238,13 @@ class SQLRepository(base.Repository):
             query = query.filter(
                 eval('%s.%s.%s == "%s"'
                      % (self._orm_module_key,
-                        self._class_type.__name__, attr, value)))
+                        self._class_type.__name__,
+                        attr,
+                        value)))
         if projection:
             query = self.project(query, projection)
+        if debug:
+            print(query.statement)
         return query.all()
 
 
