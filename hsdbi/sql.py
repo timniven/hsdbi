@@ -5,6 +5,7 @@ import importlib
 import sqlalchemy as sa
 from sqlalchemy import orm as saorm
 from sqlalchemy import func
+from sqlalchemy.dialects import mysql
 
 
 # Static Functions
@@ -22,6 +23,11 @@ def create_sql_session(connection_string):
     engine = sa.create_engine(connection_string)
     session = saorm.sessionmaker(bind=engine)()
     return session
+
+
+def print_sql(query):
+    print(query.statement.compile(dialect=mysql.dialect(),
+                                  compile_kwargs={'literal_binds': True}))
 
 
 # SQL Implementations
@@ -185,7 +191,7 @@ class SQLRepository(base.Repository):
         if projection:
             query = self.project(query, projection)
         if debug:
-            print(query.statement)
+            print_sql(query)
         result = query.one_or_none()
         if not result and expect:
             raise errors.NotFoundError(pk=kwargs, table=self._class_type)
@@ -217,7 +223,7 @@ class SQLRepository(base.Repository):
                       for attr in projection]
         query = query.with_entities(eval(', '.join(projection)))
         if debug:
-            print(query.statement)
+            print_sql(query)
         return query
 
     def search(self, projection=None, debug=False, **kwargs):
@@ -244,7 +250,7 @@ class SQLRepository(base.Repository):
         if projection:
             query = self.project(query, projection)
         if debug:
-            print(query.statement)
+            print_sql(query)
         return query.all()
 
 

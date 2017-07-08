@@ -7,12 +7,12 @@ from setuptools import setup, find_packages
 setup(
     name='hsdbi',
     packages=find_packages(exclude=['testing']),
-    version='0.1a5',
+    version='0.1a6',
     description='A simple interface for accessing databases.',
     author='Tim Niven',
     author_email='tim.niven.public@gmail.com',
     url='https://github.com/timniven/hsdbi',
-    download_url='https://github.com/timniven/hsdbi/archive/0.1a.tar.gz',
+    download_url='https://github.com/timniven/hsdbi/archive/0.1a6.tar.gz',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
