@@ -239,11 +239,21 @@ class MongoRepositoryFacadeTests(unittest.TestCase):
 
 class MongoDbFacadeTests(unittest.TestCase):
     def test_init_OK(self):
-        with mongo.MongoFacade(server='localhost', port=27017) as connection:
+        with mongo.get_connection(server='localhost', port=27017) as connection:
             _ = mongo.MongoDbFacade(
                 connection=connection,
                 db_name='snli')
             self.assertTrue(True)
+
+    def test_init_with_collections(self):
+        with mongo.get_connection(server='localhost', port=27017) as connection:
+            db = mongo.MongoDbFacade(
+                connection=connection,
+                db_name='snli',
+                collections=['train', 'dev', 'test'])
+            self.assertIsInstance(db.train, mongo.MongoRepository)
+            self.assertIsInstance(db.dev, mongo.MongoRepository)
+            self.assertIsInstance(db.test, mongo.MongoRepository)
 
 
 class MongoRepositoryTests(unittest.TestCase):
