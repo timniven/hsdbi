@@ -7,6 +7,19 @@ from hsdbi import errors
 # Static Functions
 
 
+def get_connection(server='localhost', port=27017):
+    """Get a connection to a mongo server.
+
+    Args:
+      server: String, the address of the server, e.g. 'localhost' (the default).
+      port: Integer, the port number to connect to, e.g. 27017 (the default).
+
+    Returns:
+      pymongo.mongo_client.MongoClient, connection to the database server.
+    """
+    return pymongo.MongoClient(host=server, port=port)
+
+
 def projection_dict(projection):
     """Get a projection dictionary from a list of attribute names to project.
 
@@ -25,19 +38,17 @@ def projection_dict(projection):
 # MongoDB Implementations
 
 
-class MongoRepositoryFacade(base.RepositoryFacade):
-    """Repository Facade implementation for MongoDB.
+class MongoFacade(base.RepositoryFacade):
+    """"Meta" Facade implementation for MongoDB.
 
-    With an SQL Repository facade, we connecti to a single database instance.
+    With an SQL Repository facade, we connect to a single database instance.
     With a Mongo Repository facade however, we connect to the database server.
     So we will not specify a database to connect to. We leave this to the
-    Repository class. This will create flexibility in the number of connections
-    we potentially need to make.
-
-    The upshot of this thinking is: pass a pymongo.mongo_client.MongoClient to
-    the Repository classes, instead of a connection to a specific collection.
-    We also make this connection public on the class for convenience for
-    consumers and extensibility.
+    DBFacade class. This takes the connection from the MongoFacade class,
+    creates a connection to the db required, and then passes this to the
+    Repository class for further sub-connection to a collection. This will
+    avoid the need to make multiple connections to the database server, and
+    still provide a nice clean interface.
 
     Attributes:
       connection: pymongo.mongo_client.MongoClient, connection to the database
@@ -51,11 +62,10 @@ class MongoRepositoryFacade(base.RepositoryFacade):
           server: String, the address of the server. E.g. 'localhost'.
           port: Integer, the port number to connect to. E.g. 27017.
         """
-        super(MongoRepositoryFacade, self).__init__(**kwargs)
+        super(MongoFacade, self).__init__(**kwargs)
         self._server = server
         self._port = port
-        self.connection = pymongo.MongoClient(
-            host=self._server, port=self._port)
+        self.connection = get_connection(self._server, self._port)
 
     def __enter__(self):
         self.__init__(self._server, self._port, **self._kwargs)
@@ -65,29 +75,44 @@ class MongoRepositoryFacade(base.RepositoryFacade):
         self.connection.close()
 
 
-class MongoRepository(base.Repository):
-    """Repository implementation for MongoDB."""
+class MongoDbFacade:
+    """Facade for a database in a mongo server.
 
-    def __init__(self, connection, db_name, collection_name, **kwargs):
-        """Create a new MongoRepository.
+    Attributes:
+      db: pymongo.database.Database, the connection to the database.
+    """
+
+    def __init__(self, connection, db_name, **kwargs):
+        """Create a new MongoDbFacade.
 
         Args:
           connection: pymongo.mongo_client.MongoClient, connection to the
             database server.
-          db_name: String, the name of the database we intend to connect to.
+          db_name: String, the name of the db to connect to.
+        """
+        self._connection = connection
+        self._db_name = db_name
+        self.db = connection.get_database(db_name)
+
+
+class MongoRepository(base.Repository):
+    """Repository implementation for MongoDB."""
+
+    def __init__(self, db, collection_name, **kwargs):
+        """Create a new MongoRepository.
+
+        Args:
+          db: pymongo.database.Database, the connection to the database.
           collection_name: String, the name of the collection we intend to
             connect to.
         """
         super(MongoRepository, self).__init__(**kwargs)
-        self._connection = connection
+        self._db = db
         self._collection_name = collection_name
-        self._db_name = db_name
-        self._db = self._connection.get_database(self._db_name)
         self._collection = self._db.get_collection(self._collection_name)
 
     def __enter__(self):
-        self.__init__(self._connection, self._db_name, self._collection_name,
-                      **self._kwargs)
+        self.__init__(self._db, self._collection_name, **self._kwargs)
         return self
 
     def add(self, items=None, **kwargs):
@@ -171,7 +196,7 @@ class MongoRepository(base.Repository):
 
     def dispose(self):
         """Dispose of the database server connection."""
-        self._connection.close()
+        self._db.client.close()
 
     def get(self, expect=True, projection=None, **kwargs):
         """Get an item from the database.

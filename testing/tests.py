@@ -21,7 +21,7 @@ class Foo(Base):
         return 'abbr: %s; name: %s' % (self.abbr, self.name)
 
 
-class TestFacade(sql.SQLRepositoryFacade):
+class TestFacade(sql.SQLFacade):
     def __init__(self, connection_string, **kwargs):
         super(TestFacade, self).__init__(connection_string, **kwargs)
         self.foos = sql.SQLRepository(
@@ -231,17 +231,26 @@ class MongoRepositoryFacadeTests(unittest.TestCase):
         pass
 
     def test_enter_exit_implementation(self):
-        with mongo.MongoRepositoryFacade(server='localhost',
-                                         port=27017,
-                                         db_name='test') as _:
+        with mongo.MongoFacade(
+                server='localhost',
+                port=27017) as _:
+            self.assertTrue(True)
+
+
+class MongoDbFacadeTests(unittest.TestCase):
+    def test_init_OK(self):
+        with mongo.MongoFacade(server='localhost', port=27017) as connection:
+            _ = mongo.MongoDbFacade(
+                connection=connection,
+                db_name='snli')
             self.assertTrue(True)
 
 
 class MongoRepositoryTests(unittest.TestCase):
     def setUp(self):
+        db = mongo.get_connection().test
         self.repository = mongo.MongoRepository(
-            connection=pymongo.MongoClient('localhost', 27017),
-            db_name='test',
+            db=db,
             collection_name='foo')
         self.test_cases = [('ABC', 'abc'), ('DEF', 'def'), ('GHI', 'def')]
         for test_case in self.test_cases:

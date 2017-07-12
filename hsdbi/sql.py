@@ -254,7 +254,7 @@ class SQLRepository(base.Repository):
         return query.all()
 
 
-class SQLRepositoryFacade(base.RepositoryFacade):
+class SQLFacade(base.RepositoryFacade):
     """Facade for SQL repositories.
 
     Attributes:
@@ -274,7 +274,7 @@ class SQLRepositoryFacade(base.RepositoryFacade):
         Args:
           connection_string: String, the connection string to the database.
         """
-        super(SQLRepositoryFacade, self).__init__(**kwargs)
+        super(SQLFacade, self).__init__(**kwargs)
         self._connection_string = connection_string
         self.session = create_sql_session(connection_string)
 
