@@ -101,14 +101,18 @@ class MongoDbFacade:
         if collections:
             for collection_name in collections:
                 exec('self.%s = '
-                     'MongoRepository(self.db, collection_name, **kwargs)'
+                     'MongoRepository(self.db, collection_name)'
                      % collection_name)
 
 
 class MongoRepository(base.Repository):
-    """Repository implementation for MongoDB."""
+    """Repository implementation for MongoDB.
 
-    def __init__(self, db, collection_name, **kwargs):
+    If you override this class and add anything to the constructor arguments,
+    you will need to also override the __enter__ method.
+    """
+
+    def __init__(self, db, collection_name):
         """Create a new MongoRepository.
 
         Args:
@@ -116,13 +120,13 @@ class MongoRepository(base.Repository):
           collection_name: String, the name of the collection we intend to
             connect to.
         """
-        super(MongoRepository, self).__init__(**kwargs)
+        super(MongoRepository, self).__init__()
         self._db = db
         self._collection_name = collection_name
         self._collection = self._db.get_collection(self._collection_name)
 
     def __enter__(self):
-        self.__init__(self._db, self._collection_name, **self._kwargs)
+        self.__init__(self._db, self._collection_name)
         return self
 
     def add(self, items=None, **kwargs):
