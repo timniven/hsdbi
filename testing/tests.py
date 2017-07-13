@@ -281,14 +281,10 @@ class MongoRepositoryTests(unittest.TestCase):
             db=db,
             collection_name='foo')
         self.test_cases = [('ABC', 'abc'), ('DEF', 'def'), ('GHI', 'def')]
-        for test_case in self.test_cases:
-            if self.repository.exists(_id=test_case[0]):
-                self.repository.delete(_id=test_case[0])
+        self.repository.delete_all_records()
 
     def tearDown(self):
-        for test_case in self.test_cases:
-            if self.repository.exists(_id=test_case[0]):
-                self.repository.delete(_id=test_case[0])
+        self.repository.delete_all_records()
 
     def _insert_one(self):
         self.repository.add(_id='ABC', name='abc')
@@ -382,3 +378,12 @@ class MongoRepositoryTests(unittest.TestCase):
         self.assertEqual(len(items[1]), 1)
         self.assertEqual(items[0]['_id'], 'DEF')
         self.assertEqual(items[1]['_id'], 'GHI')
+
+    def test_update(self):
+        self._insert_one()
+        doc = self.repository.get(_id='ABC')
+        doc['new_attr'] = 123
+        self.repository.update(doc)
+        doc2 = self.repository.get(_id='ABC')
+        self.assertEqual(doc2['new_attr'], 123)
+        self.assertEqual(doc2['_id'], doc['_id'])

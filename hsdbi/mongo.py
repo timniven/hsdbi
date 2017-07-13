@@ -179,7 +179,10 @@ class MongoRepository(base.Repository):
         Returns:
           pymongo.cursor.Cursor with results.
         """
-        return self._collection.find({}, projection_dict(projection))
+        if projection:
+            return self._collection.find({}, projection_dict(projection))
+        else:
+            return self._collection.find()
 
     def commit(self):
         """Does nothing for a MongoRepository."""
@@ -248,9 +251,12 @@ class MongoRepository(base.Repository):
           NotFoundError: if the item is not found in the database, but it is
             expected.
         """
-        item = next(self._collection.find(kwargs,
-                                          projection_dict(projection)),
-                    None)
+        if projection:
+            item = next(self._collection.find(kwargs,
+                                              projection_dict(projection)),
+                        None)
+        else:
+            item = next(self._collection.find(kwargs), None)
         if not item and expect:
             raise errors.NotFoundError(pk=kwargs, table=self._collection_name)
         return item
@@ -268,4 +274,19 @@ class MongoRepository(base.Repository):
         Returns:
           pymongo.cursor.Cursor with matching results (if any).
         """
-        return self._collection.find(kwargs, projection_dict(projection))
+        if projection:
+            return self._collection.find(kwargs, projection_dict(projection))
+        else:
+            return self._collection.find(kwargs)
+
+    def update(self, doc):
+        """Update the doc, saving attribute states into the db.
+
+        Args:
+          doc: the document to update.
+        """
+        _id = doc['_id']
+        doc.pop('_id')
+        self._collection.update_one(
+            {'_id': _id}, {'$set': doc})
+        doc['_id'] = _id
