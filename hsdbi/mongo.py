@@ -82,7 +82,7 @@ class MongoDbFacade:
       db: pymongo.database.Database, the connection to the database.
     """
 
-    def __init__(self, connection, db_name, collections=None, **kwargs):
+    def __init__(self, connection, db_name, collections=None):
         """Create a new MongoDbFacade.
 
         Args:
@@ -91,15 +91,18 @@ class MongoDbFacade:
           db_name: String, the name of the db to connect to.
           collections: optional list of Strings, the names of the collections.
             If specified MongoRepository objects will be automatically added
-            to this class on initialization using these collection names.
+            to this class on initialization using these collection names. If
+            this behaviour is not desired, leave collections as None, which is
+            the default.
         """
         self._connection = connection
         self._db_name = db_name
         self.db = connection.get_database(db_name)
         if collections:
             for collection_name in collections:
-                exec('self.%s = self.db.%s' % (collection_name,
-                                               collection_name))
+                exec('self.%s = '
+                     'MongoRepository(self.db, collection_name, **kwargs)'
+                     % collection_name)
 
 
 class MongoRepository(base.Repository):

@@ -9,7 +9,9 @@ test_cases = [
     tests.SQLRepositoryFacadeTests,
     tests.SQLRepositoryTests,
     tests.MongoRepositoryFacadeTests,
-    tests.MongoRepositoryTests
+    tests.MongoRepositoryTests,
+    tests.MongoDbFacadeTests,
+
 ]
 
 
