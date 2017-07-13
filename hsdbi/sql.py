@@ -33,6 +33,43 @@ def print_sql(query):
 # SQL Implementations
 
 
+class SQLFacade(base.RepositoryFacade):
+    """Facade for SQL repositories.
+
+    Attributes:
+      session: the sqlalchemy session wrapped by this facade. There is a
+        question of whether to expose this. It was decided to expose it because
+        it will enable flexibility since consumers can directly use it if
+        convenient, providing better extensibility.
+    """
+
+    def __init__(self, connection_string):
+        """Create a new RepositoryFacade.
+
+        This will create the self._engine and self.session variables from
+        the passed connection string. It also saves self._connection_string
+        for reference.
+
+        Args:
+          connection_string: String, the connection string to the database.
+        """
+        super(SQLFacade, self).__init__()
+        self._connection_string = connection_string
+        self.session = create_sql_session(connection_string)
+
+    def __enter__(self):
+        self.__init__(self._connection_string)
+        return self
+
+    def commit(self):
+        """Save changes to the database."""
+        self.session.commit()
+
+    def dispose(self):
+        """Dispose of this class - close the database connection."""
+        self.session.close()
+
+
 class SQLRepository(base.Repository):
     """Generic wrapper for db access methods for a table."""
 
@@ -252,40 +289,3 @@ class SQLRepository(base.Repository):
         if debug:
             print_sql(query)
         return query.all()
-
-
-class SQLFacade(base.RepositoryFacade):
-    """Facade for SQL repositories.
-
-    Attributes:
-      session: the sqlalchemy session wrapped by this facade. There is a
-        question of whether to expose this. It was decided to expose it because
-        it will enable flexibility since consumers can directly use it if
-        convenient, providing better extensibility.
-    """
-
-    def __init__(self, connection_string, **kwargs):
-        """Create a new RepositoryFacade.
-
-        This will create the self._engine and self.session variables from
-        the passed connection string. It also saves self._connection_string
-        for reference.
-
-        Args:
-          connection_string: String, the connection string to the database.
-        """
-        super(SQLFacade, self).__init__(**kwargs)
-        self._connection_string = connection_string
-        self.session = create_sql_session(connection_string)
-
-    def __enter__(self):
-        self.__init__(self._connection_string, **self._kwargs)
-        return self
-
-    def commit(self):
-        """Save changes to the database."""
-        self.session.commit()
-
-    def dispose(self):
-        """Dispose of this class - close the database connection."""
-        self.session.close()

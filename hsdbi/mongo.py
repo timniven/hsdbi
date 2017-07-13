@@ -55,21 +55,30 @@ class MongoFacade(base.RepositoryFacade):
         server.
     """
 
-    def __init__(self, server, port, **kwargs):
+    def __init__(self, server, port):
         """Create a new MongoRepositoryFacade.
 
         Args:
           server: String, the address of the server. E.g. 'localhost'.
           port: Integer, the port number to connect to. E.g. 27017.
         """
-        super(MongoFacade, self).__init__(**kwargs)
+        super(MongoFacade, self).__init__()
         self._server = server
         self._port = port
         self.connection = get_connection(self._server, self._port)
 
     def __enter__(self):
-        self.__init__(self._server, self._port, **self._kwargs)
+        self.__init__(self._server, self._port)
         return self
+
+    def __delitem__(self, key):
+        pass
+
+    def __getitem__(self, key):
+        return self.__getattribute__(key)
+
+    def __setitem__(self, key, value):
+        pass
 
     def dispose(self):
         self.connection.close()
@@ -103,6 +112,15 @@ class MongoDbFacade:
                 exec('self.%s = '
                      'MongoRepository(self.db, collection_name)'
                      % collection_name)
+
+    def __delitem__(self, key):
+        pass
+
+    def __getitem__(self, key):
+        return self.__getattribute__(key)
+
+    def __setitem__(self, key, value):
+        pass
 
 
 class MongoRepository(base.Repository):

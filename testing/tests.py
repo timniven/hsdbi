@@ -21,9 +21,9 @@ class Foo(Base):
         return 'abbr: %s; name: %s' % (self.abbr, self.name)
 
 
-class TestFacade(sql.SQLFacade):
+class TestSQLFacade(sql.SQLFacade):
     def __init__(self, connection_string, **kwargs):
-        super(TestFacade, self).__init__(connection_string, **kwargs)
+        super(TestSQLFacade, self).__init__(connection_string, **kwargs)
         self.foos = sql.SQLRepository(
             class_type=Foo, orm_module=ORM_MODULE, primary_keys=['abbr'],
             session=self.session)
@@ -52,15 +52,15 @@ class SQLRepositoryFacadeTests(unittest.TestCase):
     # Tests implementation on the base class.
     # This should also indirectly test the __init__ method.
     def test_enter_exit_implementation(self):
-        with TestFacade(connection_string=LTEST_CONN_STR) as _:
+        with TestSQLFacade(connection_string=LTEST_CONN_STR) as _:
             self.assertTrue(True)
             # that's all we need here
 
     def test_commit(self):
-        with TestFacade(connection_string=LTEST_CONN_STR) as db:
+        with TestSQLFacade(connection_string=LTEST_CONN_STR) as db:
             db.foos.add(Foo(abbr='ABC', name='abc'))
             db.commit()
-        with TestFacade(connection_string=LTEST_CONN_STR) as db:
+        with TestSQLFacade(connection_string=LTEST_CONN_STR) as db:
             self.assertTrue(db.foos.exists(abbr='ABC'))
 
 
@@ -223,18 +223,36 @@ class SQLRepositoryTests(unittest.TestCase):
         _ = self.repository.search(name='def', projection=['abbr'], debug=True)
 
 
-class MongoRepositoryFacadeTests(unittest.TestCase):
-    def setUp(self):
-        pass
+class TestMongoFacade(mongo.MongoFacade):
+    def __init__(self):
+        super(TestMongoFacade, self).__init__('localhost', 27017)
+        self.snli = mongo.MongoDbFacade(
+            self.connection,
+            db_name='snli',
+            collections=['train', 'dev', 'test'])
+        self.mnli = mongo.MongoDbFacade(
+            self.connection,
+            db_name='mnli',
+            collections=['train', 'dev_matched', 'dev_mismatched'])
 
-    def tearDown(self):
-        pass
+    def __enter__(self):
+        self.__init__()
+        return self
 
+
+class MongoFacadeTests(unittest.TestCase):
     def test_enter_exit_implementation(self):
         with mongo.MongoFacade(
                 server='localhost',
                 port=27017) as _:
             self.assertTrue(True)
+
+    def test_getitem_implementation(self):
+        with TestMongoFacade() as db:
+            self.assertIsInstance(db['snli'], mongo.MongoDbFacade)
+            self.assertIsInstance(db['mnli'], mongo.MongoDbFacade)
+            self.assertIsInstance(db['snli']['train'], mongo.MongoRepository)
+            self.assertIsInstance(db['mnli']['train'], mongo.MongoRepository)
 
 
 class MongoDbFacadeTests(unittest.TestCase):

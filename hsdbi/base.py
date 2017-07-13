@@ -1,6 +1,50 @@
 """Base classes."""
 
 
+class RepositoryFacade:
+    """Abstract base class for a Repository Facade.
+
+    From the Wikipedia entry on "Facade pattern":
+      'A facade is an object that provides a simplified interface to a
+      larger body of code...'
+      https://en.wikipedia.org/wiki/Facade_pattern
+    In this case, we provide a single point of access for all Repository
+    classes grouped in a conceptual unit, encapsulate the db connection,
+    provide a commit() function for saving changes, and implement the magic
+    methods __exit__ and __enter__ so this class is valid for use in a "with"
+    statement.
+
+    Collecting multiple repositories together might be viewed as an
+    inefficiency: it is simple enough to initialize one Repository class as and
+    when it is needed. Indeed, this is how I use repositories.
+
+    The Facade comes in handy where we want to share database context between
+    Repository classes.
+
+    Implementation details for Repository Facade classes will differ with the
+    database used. The intention is for a subclass to be defined for each
+    such case. See MySQLRepositoryFacade and MongoRepositoryFacade, for example.
+    """
+
+    def __init__(self):
+        """Create a new RepositoryFacade."""
+
+    def __enter__(self):
+        self.__init__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Implementation note - see:
+        https://stackoverflow.com/questions/22417323/
+        how-do-enter-and-exit-work-in-python-decorator-classes
+        """
+        self.dispose()
+
+    def dispose(self):
+        """Close the connection for disposal of the RepositoryFacade."""
+        raise NotImplementedError()
+
+
 class Repository:
     """Abstract Repository class
 
@@ -98,49 +142,4 @@ class Repository:
           projection: List, optional, of attributes to project.
           kwargs: attribute name(s) and value(s) to search on.
         """
-        raise NotImplementedError()
-
-
-class RepositoryFacade:
-    """Abstract base class for a Repository Facade.
-
-    From the Wikipedia entry on "Facade pattern":
-      'A facade is an object that provides a simplified interface to a
-      larger body of code...'
-      https://en.wikipedia.org/wiki/Facade_pattern
-    In this case, we provide a single point of access for all Repository
-    classes grouped in a conceptual unit, encapsulate the db connection,
-    provide a commit() function for saving changes, and implement the magic
-    methods __exit__ and __enter__ so this class is valid for use in a "with"
-    statement.
-
-    Collecting multiple repositories together might be viewed as an
-    inefficiency: it is simple enough to initialize one Repository class as and
-    when it is needed. Indeed, this is how I use repositories.
-
-    The Facade comes in handy where we want to share database context between
-    Repository classes.
-
-    Implementation details for Repository Facade classes will differ with the
-    database used. The intention is for a subclass to be defined for each
-    such case. See MySQLRepositoryFacade and MongoRepositoryFacade, for example.
-    """
-
-    def __init__(self, **kwargs):
-        """Create a new RepositoryFacade."""
-        self._kwargs = kwargs
-
-    def __enter__(self):
-        self.__init__(**self._kwargs)
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Implementation note - see:
-        https://stackoverflow.com/questions/22417323/
-        how-do-enter-and-exit-work-in-python-decorator-classes
-        """
-        self.dispose()
-
-    def dispose(self):
-        """Close the connection for disposal of the RepositoryFacade."""
         raise NotImplementedError()

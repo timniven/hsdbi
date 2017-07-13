@@ -8,7 +8,7 @@ from testing import tests
 test_cases = [
     tests.SQLRepositoryFacadeTests,
     tests.SQLRepositoryTests,
-    tests.MongoRepositoryFacadeTests,
+    tests.MongoFacadeTests,
     tests.MongoRepositoryTests,
     tests.MongoDbFacadeTests,
 
