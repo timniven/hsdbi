@@ -119,7 +119,8 @@ class Repository:
         Returns:
           Boolean indicating if the record exists.
         """
-        return self.get(expect=False, **kwargs) is not None
+        # NOTE: to project here or not?
+        return len(list(self.search(**kwargs))) > 0
 
     def get(self, expect=True, projection=None, **kwargs):
         """Get an item from the database.
@@ -138,8 +139,15 @@ class Repository:
 
         Specify the search attributes and values as keyword arguments.
 
+        NOTE: This must return a generator or list of records - this is
+        necessary for the default implementation of the exists() method. Any
+        change to this means you should re-implement exists().
+
         Args:
           projection: List, optional, of attributes to project.
           kwargs: attribute name(s) and value(s) to search on.
+
+        Returns:
+          Generator or list of records.
         """
         raise NotImplementedError()

@@ -4,10 +4,27 @@ from sqlalchemy.ext import declarative
 from hsdbi import sql
 from hsdbi import errors
 from hsdbi import mongo
+import glovar
 import pymongo
 
 
-LTEST_CONN_STR = 'mysql+pymysql://root:TimN7367#@localhost/ltest'
+"""Testing preparation:
+- Create a schema in localhost called "ltestl"
+- Use this script to create the testing table:
+
+CREATE TABLE IF NOT EXISTS `ltest`.`foos` (
+  `abbr` CHAR(3) NOT NULL,
+  `name` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`abbr`))
+ENGINE = InnoDB
+
+- Alter the connection string below as required. I store mine in a local
+  file called glovar.py.
+"""
+
+
+LTEST_CONN_STR = 'mysql+pymysql://%s:%s@localhost/ltest' \
+                 % (glovar.MYSQL_USERNAME, glovar.MYSQL_PASSWORD)
 Base = declarative.declarative_base()
 ORM_MODULE = 'testing.tests'
 
@@ -22,8 +39,8 @@ class Foo(Base):
 
 
 class TestSQLFacade(sql.SQLFacade):
-    def __init__(self, connection_string, **kwargs):
-        super(TestSQLFacade, self).__init__(connection_string, **kwargs)
+    def __init__(self, connection_string):
+        super(TestSQLFacade, self).__init__(connection_string)
         self.foos = sql.SQLRepository(
             class_type=Foo, orm_module=ORM_MODULE, primary_keys=['abbr'],
             session=self.session)
@@ -181,6 +198,12 @@ class SQLRepositoryTests(unittest.TestCase):
     def test_exists(self):
         self._insert_one()
         self.assertTrue(self.repository.exists(abbr='ABC'))
+        self.assertFalse(self.repository.exists(abbr='DEF'))
+
+    def test_exists_with_non_primary_key(self):
+        self._insert_one()
+        self.assertTrue(self.repository.exists(name='abc'))
+        self.assertFalse(self.repository.exists(name='def'))
 
     def test_get_returns_if_exists(self):
         self._insert_one()
@@ -345,6 +368,16 @@ class MongoRepositoryTests(unittest.TestCase):
         self._insert_three()
         self.repository.delete_all_records()
         self.assertEqual(self.repository.count(), 0)
+
+    def test_exists(self):
+        self._insert_one()
+        self.assertTrue(self.repository.exists(_id='ABC'))
+        self.assertFalse(self.repository.exists(_id='DEF'))
+
+    def test_exists_with_non_primary_key(self):
+        self._insert_one()
+        self.assertTrue(self.repository.exists(name='abc'))
+        self.assertFalse(self.repository.exists(name='def'))
 
     def test_get(self):
         self._insert_one()
