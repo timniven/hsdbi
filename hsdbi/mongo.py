@@ -170,19 +170,22 @@ class MongoRepository(base.Repository):
         else:
             raise ValueError('You must specify either items or kwargs')
 
-    def all(self, projection=None):
+    def all(self, projection=None, batch_size=100):
         """Retrieve all items of this kind from the database.
 
         Args:
           projection: List, optional, of attributes to project.
+          batch_size: Integer, optional, how many records per get from the
+            database server. Default is 100.
 
         Returns:
           pymongo.cursor.Cursor with results.
         """
         if projection:
-            return self._collection.find({}, projection_dict(projection))
+            return self._collection.find({}, projection_dict(projection))\
+                                   .batch_size(batch_size)
         else:
-            return self._collection.find()
+            return self._collection.find().batch_size(batch_size)
 
     def commit(self):
         """Does nothing for a MongoRepository."""
@@ -261,7 +264,7 @@ class MongoRepository(base.Repository):
             raise errors.NotFoundError(pk=kwargs, table=self._collection_name)
         return item
 
-    def search(self, projection=None, **kwargs):
+    def search(self, projection=None, batch_size=100, **kwargs):
         """Attempt to get item(s) from the database.
 
         Pass whatever attributes you want as keyword arguments.
@@ -270,14 +273,17 @@ class MongoRepository(base.Repository):
           projection: List of String attribute names to project, optional.
           kwargs: the attribute name(s) and value(s) to be used for search.
             If empty this function is equivalent to all().
+          batch_size: Integer, optional, how many records per get from the
+            database server. Default is 100.
 
         Returns:
           pymongo.cursor.Cursor with matching results (if any).
         """
         if projection:
-            return self._collection.find(kwargs, projection_dict(projection))
+            return self._collection.find(kwargs, projection_dict(projection))\
+                                   .batch_size(batch_size)
         else:
-            return self._collection.find(kwargs)
+            return self._collection.find(kwargs).batch_size(batch_size)
 
     def update(self, doc):
         """Update the doc, saving attribute states into the db.
