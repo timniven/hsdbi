@@ -279,6 +279,12 @@ class MongoFacadeTests(unittest.TestCase):
 
 
 class MongoDbFacadeTests(unittest.TestCase):
+    def test_enter_exit_implementation(self):
+        with mongo.MongoDbFacade(
+                connection=mongo.get_connection(server='localhost', port=27017),
+                db_name='snli') as _:
+            self.assertTrue(True)
+
     def test_init_OK(self):
         with mongo.get_connection(server='localhost', port=27017) as connection:
             _ = mongo.MongoDbFacade(
@@ -303,6 +309,7 @@ class MongoRepositoryTests(unittest.TestCase):
         self.repository = mongo.MongoRepository(
             db=db,
             collection_name='foo')
+        # for some reason the double 'def' name is intentional
         self.test_cases = [('ABC', 'abc'), ('DEF', 'def'), ('GHI', 'def')]
         self.repository.delete_all_records()
 
@@ -317,9 +324,10 @@ class MongoRepositoryTests(unittest.TestCase):
         self.repository.add(_id='DEF', name='def')
 
     def _insert_three(self):
-        self.repository.add(_id='ABC', name='abc')
-        self.repository.add(_id='DEF', name='def')
-        self.repository.add(_id='GHI', name='def')
+        self.repository.add(_id='ABC', name='abc', s=2)
+        self.repository.add(_id='DEF', name='def', s=3)
+        self.repository.add(_id='GHI', name='def', s=1)
+        # for some reason the double 'def' name is intentional
 
     def test_add(self):
         self.repository.add(_id='ABC', name='abc')
@@ -339,6 +347,35 @@ class MongoRepositoryTests(unittest.TestCase):
         self.assertEqual(len(all[2]), 1)
         self.assertEqual(all[0]['_id'], 'ABC')
         self.assertEqual(all[1]['_id'], 'DEF')
+        self.assertEqual(all[2]['_id'], 'GHI')
+
+    def test_all_with_sort_asc(self):
+        self._insert_three()
+        all = list(self.repository.all(sort_key='s'))
+        self.assertEqual(all[1]['_id'], 'ABC')
+        self.assertEqual(all[2]['_id'], 'DEF')
+        self.assertEqual(all[0]['_id'], 'GHI')
+
+    def test_all_with_sort_desc(self):
+        self._insert_three()
+        all = list(self.repository.all(sort_key='s', sort_order='desc'))
+        self.assertEqual(all[1]['_id'], 'ABC')
+        self.assertEqual(all[0]['_id'], 'DEF')
+        self.assertEqual(all[2]['_id'], 'GHI')
+
+    def test_all_project_with_sort_asc(self):
+        self._insert_three()
+        all = list(self.repository.all(projection=['_id'], sort_key='s'))
+        self.assertEqual(all[1]['_id'], 'ABC')
+        self.assertEqual(all[2]['_id'], 'DEF')
+        self.assertEqual(all[0]['_id'], 'GHI')
+
+    def test_all_project_with_sort_desc(self):
+        self._insert_three()
+        all = list(self.repository.all(projection=['_id'], sort_key='s',
+                                       sort_order='desc'))
+        self.assertEqual(all[1]['_id'], 'ABC')
+        self.assertEqual(all[0]['_id'], 'DEF')
         self.assertEqual(all[2]['_id'], 'GHI')
 
     def test_count(self):

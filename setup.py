@@ -3,16 +3,23 @@ from setuptools import setup, find_packages
 
 # python setup.py sdist upload -r pypi
 
+"""Publish steps:
+- update version numbers in this file: version and download-url
+- create git tag:
+    http://www.manikrathee.com/how-to-delete-a-tag-in-git.html
+- run the command above: python setup.py ...
+"""
+
 
 setup(
     name='hsdbi',
     packages=find_packages(exclude=['testing']),
-    version='0.1a15',
+    version='0.1a16',
     description='A simple interface for accessing databases.',
     author='Tim Niven',
     author_email='tim.niven.public@gmail.com',
     url='https://github.com/timniven/hsdbi',
-    download_url='https://github.com/timniven/hsdbi/archive/0.1a15.tar.gz',
+    download_url='https://github.com/timniven/hsdbi/archive/0.1a16.tar.gz',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',

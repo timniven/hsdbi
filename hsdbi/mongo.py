@@ -35,6 +35,21 @@ def projection_dict(projection):
         return {}
 
 
+def sort(query, sort_key, sort_order):
+    """Applies sort to an existing query.
+
+    Args:
+      query: pymongo.cursor.Cursor.
+      sort_key: String.
+      sort_order: String in {asc, desc}.
+
+    Returns:
+      pymongo.cursor.Cursor.
+    """
+    return query.sort(sort_key, pymongo.ASCENDING if sort_order == 'asc'
+                                else pymongo.DESCENDING)
+
+
 # MongoDB Implementations
 
 
@@ -106,6 +121,7 @@ class MongoDbFacade:
         """
         self._connection = connection
         self._db_name = db_name
+        self._collections = collections
         self.db = connection.get_database(db_name)
         if collections:
             for collection_name in collections:
@@ -115,6 +131,17 @@ class MongoDbFacade:
 
     def __delitem__(self, key):
         pass
+
+    def __enter__(self):
+        self.__init__(self._connection, self._db_name, self._collections)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Implementation note - see:
+        https://stackoverflow.com/questions/22417323/
+        how-do-enter-and-exit-work-in-python-decorator-classes
+        """
+        self._connection.close()
 
     def __getitem__(self, key):
         return self.__getattribute__(key)
@@ -170,11 +197,14 @@ class MongoRepository(base.Repository):
         else:
             raise ValueError('You must specify either items or kwargs')
 
-    def all(self, projection=None, batch_size=100):
+    def all(self, projection=None, sort_key=None, sort_order='asc',
+            batch_size=100):
         """Retrieve all items of this kind from the database.
 
         Args:
           projection: List, optional, of attributes to project.
+          sort_key: String, optional.
+          sort_order: String in {asc, desc}.
           batch_size: Integer, optional, how many records per get from the
             database server. Default is 100.
 
@@ -182,10 +212,14 @@ class MongoRepository(base.Repository):
           pymongo.cursor.Cursor with results.
         """
         if projection:
-            return self._collection.find({}, projection_dict(projection))\
-                                   .batch_size(batch_size)
+            query = self._collection.find({}, projection_dict(projection))\
+                                    .batch_size(batch_size)
+
         else:
-            return self._collection.find().batch_size(batch_size)
+            query = self._collection.find().batch_size(batch_size)
+        if sort_key:
+            query = sort(query, sort_key, sort_order)
+        return query
 
     def commit(self):
         """Does nothing for a MongoRepository."""
@@ -264,7 +298,8 @@ class MongoRepository(base.Repository):
             raise errors.NotFoundError(pk=kwargs, table=self._collection_name)
         return item
 
-    def search(self, projection=None, batch_size=100, **kwargs):
+    def search(self, projection=None, sort_key=None, sort_order='asc',
+               batch_size=100, **kwargs):
         """Attempt to get item(s) from the database.
 
         Pass whatever attributes you want as keyword arguments.
@@ -273,6 +308,8 @@ class MongoRepository(base.Repository):
           projection: List of String attribute names to project, optional.
           kwargs: the attribute name(s) and value(s) to be used for search.
             If empty this function is equivalent to all().
+          sort_key: String.
+          sort_order: String in {asc, desc}.
           batch_size: Integer, optional, how many records per get from the
             database server. Default is 100.
 
@@ -280,10 +317,13 @@ class MongoRepository(base.Repository):
           pymongo.cursor.Cursor with matching results (if any).
         """
         if projection:
-            return self._collection.find(kwargs, projection_dict(projection))\
+            query = self._collection.find(kwargs, projection_dict(projection))\
                                    .batch_size(batch_size)
         else:
-            return self._collection.find(kwargs).batch_size(batch_size)
+            query = self._collection.find(kwargs).batch_size(batch_size)
+        if sort_key:
+            query = sort(query, sort_key, sort_order)
+        return query
 
     def update(self, doc):
         """Update the doc, saving attribute states into the db.
