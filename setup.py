@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 setup(
     name='hsdbi',
     packages=find_packages(exclude=['testing']),
-    version='0.1a16',
+    version='0.1a17',
     description='A simple interface for accessing databases.',
     author='Tim Niven',
     author_email='tim.niven.public@gmail.com',
