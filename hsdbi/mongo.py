@@ -70,7 +70,7 @@ class MongoFacade(base.RepositoryFacade):
         server.
     """
 
-    def __init__(self, server, port):
+    def __init__(self, server='localhost', port=27017):
         """Create a new MongoRepositoryFacade.
 
         Args:
@@ -106,7 +106,7 @@ class MongoDbFacade:
       db: pymongo.database.Database, the connection to the database.
     """
 
-    def __init__(self, connection, db_name, collections=None):
+    def __init__(self, db_name, connection=get_connection(), collections=None):
         """Create a new MongoDbFacade.
 
         Args:
