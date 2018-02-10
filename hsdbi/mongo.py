@@ -50,6 +50,7 @@ def sort(query, sort_key, sort_order):
                                 else pymongo.DESCENDING)
 
 
+#
 # MongoDB Implementations
 
 
@@ -83,7 +84,7 @@ class MongoFacade(base.RepositoryFacade):
         self.connection = get_connection(self._server, self._port)
 
     def __enter__(self):
-        self.__init__(self._server, self._port)
+        self.__init__(server=self._server, port=self._port)
         return self
 
     def __delitem__(self, key):
@@ -133,7 +134,9 @@ class MongoDbFacade:
         pass
 
     def __enter__(self):
-        self.__init__(self._connection, self._db_name, self._collections)
+        self.__init__(db_name=self._db_name,
+                      connection=self._connection,
+                      collections=self._collections)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
