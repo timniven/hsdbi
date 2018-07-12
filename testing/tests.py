@@ -250,11 +250,11 @@ class TestMongoFacade(mongo.MongoFacade):
     def __init__(self):
         super(TestMongoFacade, self).__init__('localhost', 27017)
         self.snli = mongo.MongoDbFacade(
-            self.connection,
+            connection=self.connection,
             db_name='snli',
             collections=['train', 'dev', 'test'])
         self.mnli = mongo.MongoDbFacade(
-            self.connection,
+            connection=self.connection,
             db_name='mnli',
             collections=['train', 'dev_matched', 'dev_mismatched'])
 

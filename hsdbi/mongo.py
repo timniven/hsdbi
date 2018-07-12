@@ -17,7 +17,7 @@ def get_connection(server='localhost', port=27017):
     Returns:
       pymongo.mongo_client.MongoClient, connection to the database server.
     """
-    return pymongo.MongoClient(host=server, port=port)
+    return pymongo.MongoClient(host=server, port=port, connect=False)
 
 
 def projection_dict(projection):
@@ -298,6 +298,8 @@ class MongoRepository(base.Repository):
         else:
             item = next(self._collection.find(kwargs), None)
         if not item and expect:
+            print('raising NotFoundError... on kwargs:')
+            print(kwargs)
             raise errors.NotFoundError(pk=kwargs, table=self._collection_name)
         return item
 
